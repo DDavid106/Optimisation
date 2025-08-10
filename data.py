@@ -4,7 +4,6 @@ import plotly.express as px
 import gspread
 from google.oauth2.service_account import Credentials
 import unicodedata
-import json
 
 # --- Streamlit Page Config ---
 st.set_page_config(page_title="ERA Reliability Monitoring", layout="wide")
@@ -13,15 +12,15 @@ st.title("📊 ERA Reliability Monitoring Dashboard")
 # --- Authenticate and Load Google Sheet ---
 st.info("Connecting to Google Sheets...")
 
-# Load credentials from Streamlit secrets
-creds_dict = st.secrets["gcp_service_account"]
-# Fix newlines in private_key if they are escaped
-creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-
 scopes = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
+
+# Load credentials dict from Streamlit secrets and make a copy
+creds_dict = dict(st.secrets["gcp_service_account"])
+# Fix private key newlines
+creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
 
 creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
 client = gspread.authorize(creds)
