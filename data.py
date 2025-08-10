@@ -1,10 +1,10 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import gspread
 from google.oauth2.service_account import Credentials
 import unicodedata
+import json
 
 # --- Streamlit Page Config ---
 st.set_page_config(page_title="ERA Reliability Monitoring", layout="wide")
@@ -13,14 +13,17 @@ st.title("📊 ERA Reliability Monitoring Dashboard")
 # --- Authenticate and Load Google Sheet ---
 st.info("Connecting to Google Sheets...")
 
-creds = Credentials.from_service_account_file(
-    "era-reliability-monitoring-3a7c512a0681.json",  # Ensure this file is in your project folder
-    scopes=[
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
-)
+# Load credentials from Streamlit secrets
+creds_dict = st.secrets["gcp_service_account"]
+# Fix newlines in private_key if they are escaped
+creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
 
+scopes = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
+creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
 client = gspread.authorize(creds)
 spreadsheet = client.open("Reliability Monitoring Sheet")
 
@@ -111,7 +114,7 @@ monthly = df_all.groupby("Month").agg({
 }).reset_index()
 
 monthly["SAIDI"] = monthly["Elapsed Time"] / monthly["Customer No"]
-monthly["SAIFI"] = monthly["Customer No"] / monthly["Customer No"]  # This ends up being 1 — placeholder
+monthly["SAIFI"] = monthly["Customer No"] / monthly["Customer No"]  # Placeholder (equals 1)
 
 fig_monthly = px.line(monthly, x="Month", y=["SAIDI", "SAIFI"], markers=True)
 st.plotly_chart(fig_monthly, use_container_width=True)
